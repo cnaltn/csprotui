@@ -1,0 +1,31 @@
+[package]
+name = "prosettings-tui"
+version = "0.1.0"
+edition = "2021"
+description = "TUI app for viewing prosettings.net player data"
+license = "MIT"
+authors = ["Developer"]
+
+[dependencies]
+ratatui = "0.30"
+crossterm = "0.29"
+scraper = "0.21"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+anyhow = "1"
+thiserror = "2"
+opaline = { git = "https://github.com/hyperb1iss/opaline.git", features = ["widgets", "builtin-themes"] }
+tui-banner = "0.2"
+
+[dependencies.reqwest]
+version = "0.12"
+features = ["blocking", "rustls-tls"]
+default-features = false
+
+[lib]
+name = "prosettings_tui"
+path = "src/lib.rs"
+
+[[bin]]
+name = "prosettings-tui"
+path = "src/main.rs"
