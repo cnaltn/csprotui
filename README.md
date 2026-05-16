@@ -44,6 +44,12 @@ cargo run
 > ```bash
 > cd scraper && npm install
 > ```
+>
+> The scraper fetches data from `https://prosettings.net/players` by default. You can override the base URL via the environment variable:
+>
+> ```bash
+> export PROSETTINGS_BASE_URL=https://your-endpoint.com/players
+> ```
 
 ## Controls
 
