@@ -837,7 +837,7 @@ impl App {
             return;
         }
 
-        let header = Row::new(vec![Cell::from("Item"), Cell::from("Category")]).style(dim_if(
+        let header = Row::new(vec![Cell::from("Category"), Cell::from("Item")]).style(dim_if(
             theme,
             Style::default().fg(accent).bg(bg).bold(),
             dimmed,
@@ -855,8 +855,8 @@ impl App {
                 let key_style = dim_if(theme, style_key(theme).bg(row_bg), dimmed);
                 let val_style = dim_if(theme, style_value(theme).bg(row_bg), dimmed);
                 Row::new(vec![
-                    Cell::from(name.clone()).style(key_style),
-                    Cell::from(category.clone()).style(val_style),
+                    Cell::from(category.clone()).style(key_style),
+                    Cell::from(name.clone()).style(val_style),
                 ])
             })
             .collect();
