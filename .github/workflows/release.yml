@@ -58,6 +58,8 @@ jobs:
           npm ci
 
       - name: Build release binary
+        env:
+          CSPROTUI_BASE_URL: ${{ vars.CSPROTUI_BASE_URL }}
         run: cargo build --release --target ${{ matrix.target }}
 
       - name: Rename binary
