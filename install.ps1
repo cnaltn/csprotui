@@ -9,14 +9,48 @@ $InstallDir = "$env:LOCALAPPDATA\csprotui"
 $BinDir  = "$InstallDir\bin"
 
 function Info  ($msg) { Write-Host "==> $msg" -ForegroundColor Cyan }
-function Ok    ($msg) { Write-Host "  ✓ $msg" -ForegroundColor Green }
-function Warn  ($msg) { Write-Host "  ! $msg" -ForegroundColor Yellow }
-function Fail  ($msg) { Write-Host "  ✗ $msg" -ForegroundColor Red; exit 1 }
+function Ok    ($msg) { Write-Host "  " -NoNewline; Write-Host "ok" -ForegroundColor Green -NoNewline; Write-Host " $msg" }
+function Warn  ($msg) { Write-Host "  " -NoNewline; Write-Host "!" -ForegroundColor Yellow -NoNewline; Write-Host " $msg" }
+function Fail  ($msg) { Write-Host "  " -NoNewline; Write-Host "!!" -ForegroundColor Red -NoNewline; Write-Host " $msg"; exit 1 }
+
+function Banner {
+    $accent = "`e[38;2;220;95;60m"
+    $rst = "`e[0m"
+    $lines = @(
+        '██████╗ ███████╗██████╗ ██████╗  ██████╗ ████████╗██╗   ██╗██╗',
+        '██╔════╝██╔════╝██╔══██╗██╔══██╗██╔═══██╗╚══██╔══╝██║   ██║██║',
+        '██║     ███████╗██████╔╝██████╔╝██║   ██║   ██║   ██║   ██║██║',
+        '██║     ╚════██║██╔═══╝ ██╔══██╗██║   ██║   ██║   ██║   ██║██║',
+        '╚██████╗███████║██║     ██║  ██║╚██████╔╝   ██║   ╚██████╔╝██║',
+        ' ╚═════╝╚══════╝╚═╝     ╚═╝  ╚═╝ ╚═════╝    ╚═╝    ╚═════╝ ╚═╝'
+    )
+    Write-Host ""
+    foreach ($line in $lines) {
+        $out = ""
+        foreach ($ch in $line.ToCharArray()) {
+            if ($ch -eq ' ') {
+                $out += " "
+            } else {
+                $out += "$accent$ch$rst"
+            }
+        }
+        Write-Host $out
+    }
+    Write-Host ""
+    Write-Host "${accent}     CSPROTUI  -  `e[2minstall${rst}"
+    Write-Host ""
+}
 
 # Detect platform
 $Target = "windows-x86_64"
 $Archive = "zip"
+
+Banner
+
 Info "Detected platform: $Target"
+Write-Host "  " -NoNewline; Write-Host "*" -ForegroundColor Yellow -NoNewline; Write-Host " Platform  Windows (x86-64)  " -NoNewline -ForegroundColor White
+Write-Host "->" -ForegroundColor DarkGray -NoNewline; Write-Host "  $Target" -ForegroundColor DarkGray
+Write-Host ""
 
 # Fetch latest release
 Info "Fetching latest release..."
@@ -51,7 +85,7 @@ try {
     if ((Test-Path $scraperDir) -and (Get-Command npm -ErrorAction SilentlyContinue)) {
         Info "Installing scraper dependencies..."
         Push-Location $scraperDir
-        & npm install --silent 2>$null
+        & npm install 2>&1 | Out-Null
         Pop-Location
         Ok "Scraper ready"
     }

@@ -9,12 +9,62 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
-NC='\033[0m'
+CYAN='\033[0;36m'
+WHITE='\033[0;37m'
+DIM='\033[2m'
+ACCENT='\033[38;2;220;95;60m'
+RST='\033[0m'
 
-info()  { echo -e "${BLUE}==>${NC} $1"; }
-ok()    { echo -e "${GREEN}  ✓${NC} $1"; }
-warn()  { echo -e "${YELLOW}  !${NC} $1"; }
-fail()  { echo -e "${RED}  ✗${NC} $1"; exit 1; }
+info()  { echo -e "${BLUE}==>${RST} $1"; }
+ok()    { echo -e "  ${GREEN}ok${RST} $1"; }
+fail()  { echo -e "  ${RED}!!${RST} $1"; exit 1; }
+warn()  { echo -e "  ${YELLOW}!${RST} $1"; }
+
+banner() {
+    local lines=(
+        '██████╗ ███████╗██████╗ ██████╗  ██████╗ ████████╗██╗   ██╗██╗'
+        '██╔════╝██╔════╝██╔══██╗██╔══██╗██╔═══██╗╚══██╔══╝██║   ██║██║'
+        '██║     ███████╗██████╔╝██████╔╝██║   ██║   ██║   ██║   ██║██║'
+        '██║     ╚════██║██╔═══╝ ██╔══██╗██║   ██║   ██║   ██║   ██║██║'
+        '╚██████╗███████║██║     ██║  ██║╚██████╔╝   ██║   ╚██████╔╝██║'
+        ' ╚═════╝╚══════╝╚═╝     ╚═╝  ╚═╝ ╚═════╝    ╚═╝    ╚═════╝ ╚═╝'
+    )
+    echo ""
+    for line in "${lines[@]}"; do
+        local out=""
+        local len=${#line}
+        for (( i=0; i<len; i++ )); do
+            local ch="${line:$i:1}"
+            if [ "$ch" = " " ]; then
+                out+=" "
+            else
+                out+="${ACCENT}${ch}${RST}"
+            fi
+        done
+        echo -e "$out"
+    done
+    echo ""
+    echo -e "${ACCENT}     CSPROTUI  -  ${DIM}install${RST}"
+    echo ""
+}
+
+platform_line() {
+    local os_name
+    case "$(uname -s)" in
+        Linux)  os_name="Linux" ;;
+        Darwin) os_name="macOS" ;;
+        *)      os_name="$(uname -s)" ;;
+    esac
+    local arch_name
+    case "$(uname -m)" in
+        x86_64)  arch_name="x86-64" ;;
+        aarch64) arch_name="arm64" ;;
+        arm64)   arch_name="arm64" ;;
+        *)       arch_name="$(uname -m)" ;;
+    esac
+    echo -e "  ${YELLOW}*${RST} ${WHITE}Platform${RST}  ${os_name} (${arch_name})  ${DIM}->${RST}  ${DIM}${TARGET}${RST}"
+    echo ""
+}
 
 command -v curl >/dev/null || command -v wget >/dev/null || fail "curl or wget required"
 command -v tar >/dev/null  || fail "tar required"
@@ -29,7 +79,8 @@ case "$(uname -sm)" in
   *) fail "Unsupported platform: $(uname -sm)" ;;
 esac
 
-info "Detected platform: ${TARGET}"
+banner
+platform_line
 
 # Fetch latest release tag
 info "Fetching latest release..."
@@ -49,12 +100,13 @@ DOWNLOAD_URL="https://github.com/${REPO}/releases/download/${TAG}/${ARCHIVE_NAME
 TMP_DIR=$(mktemp -d)
 trap 'rm -rf "${TMP_DIR}"' EXIT
 
-info "Downloading ${ARCHIVE_NAME}..."
+echo -e "  ${CYAN}downloading${RST}  "
 if command -v curl >/dev/null; then
-  curl -fsSL --progress-bar "${DOWNLOAD_URL}" -o "${TMP_DIR}/${ARCHIVE_NAME}"
+  curl -fSL --progress-bar "${DOWNLOAD_URL}" -o "${TMP_DIR}/${ARCHIVE_NAME}"
 else
-  wget -q --show-progress "${DOWNLOAD_URL}" -O "${TMP_DIR}/${ARCHIVE_NAME}"
+  wget --show-progress -q "${DOWNLOAD_URL}" -O "${TMP_DIR}/${ARCHIVE_NAME}"
 fi
+echo ""
 ok "Downloaded"
 
 # Extract
@@ -65,9 +117,9 @@ ok "Extracted"
 
 # Install scraper deps
 if [ -d "scraper" ] && command -v npm >/dev/null; then
-  info "Installing scraper dependencies..."
+  echo -e "  ${CYAN}installing scraper deps...${RST}"
   cd scraper
-  npm install --silent
+  npm install
   cd ..
   ok "Scraper ready"
 fi
@@ -97,5 +149,5 @@ if [[ ":${PATH}:" != *":${BIN_DIR}:"* ]]; then
 fi
 
 echo ""
-echo -e "${GREEN}CSPROTUI ${TAG} installed!${NC}"
-echo "    Run: csprotui"
+echo -e "${GREEN}CSPROTUI ${TAG} installed!${RST}"
+echo "    Run: ${GREEN}csprotui${RST}"
