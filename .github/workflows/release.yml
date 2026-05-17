@@ -74,11 +74,6 @@ jobs:
         with:
           key: ${{ matrix.target }}
 
-      - name: Install scraper dependencies
-        run: |
-          cd scraper
-          npm ci
-
       - name: Build release binary
         run: cargo build --release --target ${{ matrix.target }}
 
