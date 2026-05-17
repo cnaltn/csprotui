@@ -25,15 +25,30 @@ A Terminal User Interface (TUI) application for browsing professional CS2 player
 
 ## Installation
 
-### via npm (recommended)
+Download the latest release for your platform from [GitHub Releases](https://github.com/cnaltn/csprotui/releases).
+
+### Linux / macOS
 
 ```bash
-npm install -g csprotui
+# Download and extract (replace with actual release URL)
+tar -xzf csprotui-linux-x86_64.tar.gz
+chmod +x csprotui
+sudo mv csprotui /usr/local/bin/
 ```
 
-The install script automatically downloads the correct binary and sets up the scraper.
+### Windows
 
-### from source
+Extract `csprotui-windows-x86_64.zip` and add `csprotui.exe` to your PATH.
+
+### Fedora
+
+```bash
+tar -xzf csprotui-fedora-x86_64.tar.gz
+chmod +x csprotui
+sudo mv csprotui /usr/local/bin/
+```
+
+### From Source
 
 ```bash
 cd scraper && npm install
@@ -49,7 +64,7 @@ The compiled binary will be at `target/release/csprotui`.
 csprotui
 ```
 
-> **Note:** The app bundles a Node.js scraper. When installing via npm, dependencies are handled automatically. When building from source, run `cd scraper && npm install` first.
+> **Note:** The app bundles a Node.js scraper. When using pre-built binaries, ensure `node` is available on your PATH.
 
 ## Controls
 

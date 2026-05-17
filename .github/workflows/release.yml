@@ -7,47 +7,69 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
 jobs:
   build:
-    name: Build ${{ matrix.target }}
+    name: Build ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
+    container: ${{ matrix.container }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - os: windows-latest
+          - name: windows-x86_64
+            os: windows-latest
             target: x86_64-pc-windows-msvc
             ext: .exe
             archive: zip
-          - os: ubuntu-latest
+            container: ''
+          - name: linux-x86_64
+            os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             ext: ''
             archive: tar.gz
-          - os: macos-latest
+            container: ''
+          - name: fedora-x86_64
+            os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            ext: ''
+            archive: tar.gz
+            container: fedora:latest
+          - name: macos-aarch64
+            os: macos-latest
             target: aarch64-apple-darwin
             ext: ''
             archive: tar.gz
-          - os: macos-latest
+            container: ''
+          - name: macos-x86_64
+            os: macos-latest
             target: x86_64-apple-darwin
             ext: ''
             archive: tar.gz
+            container: ''
 
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install dependencies (Fedora)
+        if: matrix.container == 'fedora:latest'
+        run: |
+          dnf install -y rust cargo nodejs nodejs-npm
+
       - name: Install Node.js
+        if: matrix.container != 'fedora:latest'
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
       - name: Install Rust toolchain
+        if: matrix.container != 'fedora:latest'
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
 
       - name: Cache Rust dependencies
+        if: matrix.container != 'fedora:latest'
         uses: Swatinem/rust-cache@v2
         with:
           key: ${{ matrix.target }}
@@ -73,20 +95,20 @@ jobs:
       - name: Package (zip)
         if: matrix.archive == 'zip'
         shell: bash
-        run: 7z a "csprotui-${{ matrix.target }}.zip" csprotui.exe
+        run: 7z a "csprotui-${{ matrix.name }}.zip" csprotui.exe
 
       - name: Package (tar.gz)
         if: matrix.archive == 'tar.gz'
         shell: bash
         run: |
           chmod +x csprotui
-          tar czf "csprotui-${{ matrix.target }}.tar.gz" csprotui
+          tar czf "csprotui-${{ matrix.name }}.tar.gz" csprotui
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: csprotui-${{ matrix.target }}
-          path: csprotui-${{ matrix.target }}.${{ matrix.archive == 'zip' && 'zip' || 'tar.gz' }}
+          name: csprotui-${{ matrix.name }}
+          path: csprotui-${{ matrix.name }}.${{ matrix.archive == 'zip' && 'zip' || 'tar.gz' }}
 
   release:
     name: Create Release
