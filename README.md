@@ -27,41 +27,34 @@ A Terminal User Interface (TUI) application for browsing professional CS2 player
 
 Download the latest release for your platform from [GitHub Releases](https://github.com/cnaltn/csprotui/releases).
 
-### Quick Install (Linux / macOS / Fedora)
+### Quick Install
 
-**One-liner (recommended):**
+**Linux / macOS / Fedora:**
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/cnaltn/csprotui/main/install.sh | bash
 ```
 
-Or download a release archive manually:
+**Windows (PowerShell):**
+
+```powershell
+irm https://raw.githubusercontent.com/cnaltn/csprotui/main/install.ps1 | iex
+```
+
+Or download a release archive and run the bundled installer:
 
 ```bash
-# 1. Download and extract
+# Linux / macOS / Fedora
 tar -xzf csprotui-linux-x86_64.tar.gz   # or fedora / macos variant
 cd csprotui
-
-# 2. Run the bundled installer
 ./install.sh
 ```
 
-### Windows
-
-Extract `csprotui-windows-x86_64.zip` to a folder (e.g. `C:\Program Files\csprotui\`).
-
-Then open PowerShell as Administrator:
-
 ```powershell
-# Install scraper dependencies
-cd "C:\Program Files\csprotui\scraper"
-npm install
-
-# Add to PATH
-[Environment]::SetEnvironmentVariable("Path", $env:Path + ";C:\Program Files\csprotui", "User")
-
-# Set scraper dir
-[Environment]::SetEnvironmentVariable("CSPROTUI_SCRAPER_DIR", "C:\Program Files\csprotui\scraper", "User")
+# Windows
+Expand-Archive csprotui-windows-x86_64.zip -DestinationPath csprotui
+cd csprotui
+.\install.ps1
 ```
 
 ### From Source

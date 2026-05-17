@@ -87,17 +87,21 @@ jobs:
             cp "$BIN" csprotui
           fi
 
+      - name: Write base_url
+        shell: bash
+        run: echo "${{ vars.CSPROTUI_BASE_URL }}" > base_url
+
       - name: Package (zip)
         if: matrix.archive == 'zip'
         shell: bash
-        run: 7z a "csprotui-${{ matrix.name }}.zip" csprotui.exe scraper/ install.sh
+        run: 7z a "csprotui-${{ matrix.name }}.zip" csprotui.exe scraper/ install.ps1 base_url
 
       - name: Package (tar.gz)
         if: matrix.archive == 'tar.gz'
         shell: bash
         run: |
           chmod +x csprotui install.sh
-          tar czf "csprotui-${{ matrix.name }}.tar.gz" csprotui scraper/ install.sh
+          tar czf "csprotui-${{ matrix.name }}.tar.gz" csprotui scraper/ install.sh base_url
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
