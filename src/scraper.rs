@@ -5,17 +5,16 @@ use std::path::PathBuf;
 use std::process::Command;
 use std::time::Duration;
 
-pub const SCRAPER_PATH: &str = "scraper/index.js";
 pub const TOTALCSGO_FETCH_TIMEOUT: Duration = Duration::from_secs(4);
 
 fn scraper_dir() -> PathBuf {
     env::var("CSPROTUI_SCRAPER_DIR")
         .map(PathBuf::from)
-        .unwrap_or_else(|_| PathBuf::from("."))
+        .unwrap_or_else(|_| PathBuf::from("scraper"))
 }
 
 fn scraper_path() -> PathBuf {
-    scraper_dir().join(SCRAPER_PATH)
+    scraper_dir().join("index.js")
 }
 
 fn base_url() -> Result<String, ScraperError> {
