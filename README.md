@@ -1,9 +1,8 @@
 # CSPROTUI
 
-A Terminal User Interface (TUI) application for browsing professional CS2 player settings from [prosettings.net](https://prosettings.net).
+A Terminal User Interface (TUI) application for browsing professional CS2 player settings.
 
 ![Rust](https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=white)
-![License](https://img.shields.io/badge/License-MIT-green.svg)
 
 ## Features
 
@@ -22,8 +21,7 @@ A Terminal User Interface (TUI) application for browsing professional CS2 player
 
 ## Dependencies
 
-- [Rust](https://www.rust-lang.org/) (latest stable)
-- [Node.js](https://nodejs.org/) (required for the external scraper)
+- [Node.js](https://nodejs.org/) (required at runtime for the scraper)
 
 ## Installation
 
@@ -33,9 +31,13 @@ A Terminal User Interface (TUI) application for browsing professional CS2 player
 npm install -g csprotui
 ```
 
+The install script automatically downloads the correct binary and sets up the scraper.
+
 ### from source
 
 ```bash
+cd scraper && npm install
+cd ..
 cargo build --release
 ```
 
@@ -44,22 +46,10 @@ The compiled binary will be at `target/release/csprotui`.
 ## Running
 
 ```bash
-cargo run
-# or if installed via npm:
 csprotui
 ```
 
-> **Note:** This app includes a bundled Node.js scraper under the `scraper/` directory. Before first run, install its dependencies:
->
-> ```bash
-> cd scraper && npm install
-> ```
->
- > The scraper fetches data from `https://prosettings.net/players` by default. You can override the base URL via the environment variable:
->
-> ```bash
-> export CSPROTUI_BASE_URL=https://your-endpoint.com/players
-> ```
+> **Note:** The app bundles a Node.js scraper. When installing via npm, dependencies are handled automatically. When building from source, run `cd scraper && npm install` first.
 
 ## Controls
 
@@ -74,7 +64,3 @@ csprotui
 | `Esc` | Cancel search / go back |
 | `Enter` | Submit search |
 | `q` | Quit (when search is empty) |
-
-## License
-
-MIT

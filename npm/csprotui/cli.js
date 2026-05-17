@@ -12,10 +12,21 @@ if (!fs.existsSync(binary)) {
   process.exit(1);
 }
 
-const scraperDir = path.join(__dirname, 'scraper');
 const env = { ...process.env };
+
+// Set scraper directory
+const scraperDir = path.join(__dirname, 'scraper');
 if (fs.existsSync(scraperDir)) {
   env.CSPROTUI_SCRAPER_DIR = scraperDir;
+}
+
+// Base64-encoded URL — replaced at publish time by CI
+const ENCODED_URL = '__ENCODED_URL__';
+if (ENCODED_URL !== '__ENCODED_URL__') {
+  env.CSPROTUI_BASE_URL = Buffer.from(ENCODED_URL, 'base64').toString('utf8');
+} else if (!env.CSPROTUI_BASE_URL) {
+  console.error('Config error: CSPROTUI_BASE_URL not set and no embedded URL found.');
+  process.exit(1);
 }
 
 const result = spawnSync(binary, process.argv.slice(2), {

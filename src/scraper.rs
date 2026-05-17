@@ -5,8 +5,6 @@ use std::path::PathBuf;
 use std::process::Command;
 use std::time::Duration;
 
-include!(concat!(env!("OUT_DIR"), "/base_url.rs"));
-
 pub const SCRAPER_PATH: &str = "scraper/index.js";
 pub const TOTALCSGO_FETCH_TIMEOUT: Duration = Duration::from_secs(4);
 
@@ -18,6 +16,13 @@ fn scraper_dir() -> PathBuf {
 
 fn scraper_path() -> PathBuf {
     scraper_dir().join(SCRAPER_PATH)
+}
+
+fn base_url() -> Result<String, ScraperError> {
+    env::var("CSPROTUI_BASE_URL").map_err(|_| ScraperError::Exit {
+        status: " missing config".to_string(),
+        stderr: "CSPROTUI_BASE_URL not set".to_string(),
+    })
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -48,7 +53,7 @@ pub fn run_node_scraper(slug: &str) -> Result<String, ScraperError> {
     let output = Command::new("node")
         .arg(&path)
         .arg(slug)
-        .env("CSPROTUI_BASE_URL", BASE_URL)
+        .env("CSPROTUI_BASE_URL", base_url()?)
         .output()
         .map_err(|source| ScraperError::Command {
             path: path_str.clone(),
