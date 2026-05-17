@@ -63,7 +63,7 @@ jobs:
       - name: Rename binary
         shell: bash
         run: |
-          BIN="target/${{ matrix.target }}/release/prosettings-tui${{ matrix.ext }}"
+          BIN="target/${{ matrix.target }}/release/csprotui${{ matrix.ext }}"
           if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
             cp "$BIN" csprotui.exe
           else

@@ -27,5 +27,5 @@ name = "prosettings_tui"
 path = "src/lib.rs"
 
 [[bin]]
-name = "prosettings-tui"
+name = "csprotui"
 path = "src/main.rs"
