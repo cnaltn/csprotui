@@ -8,3 +8,5 @@
 .DS_Store
 Thumbs.db
 scraper/node_modules/
+npm/csprotui/bin/
+npm/csprotui/node_modules/

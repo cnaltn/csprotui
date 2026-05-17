@@ -11,27 +11,29 @@ env:
 
 jobs:
   build:
+    name: Build ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         include:
-          - target: x86_64-unknown-linux-gnu
-            os: ubuntu-latest
-            binary: prosettings-tui
-            asset: prosettings-tui-linux-x86_64
-          - target: x86_64-apple-darwin
-            os: macos-latest
-            binary: prosettings-tui
-            asset: prosettings-tui-macos-x86_64
-          - target: aarch64-apple-darwin
-            os: macos-latest
-            binary: prosettings-tui
-            asset: prosettings-tui-macos-aarch64
-          - target: x86_64-pc-windows-msvc
-            os: windows-latest
-            binary: prosettings-tui.exe
-            asset: prosettings-tui-windows-x86_64.exe
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            ext: .exe
+            archive: zip
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            ext: ''
+            archive: tar.gz
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            ext: ''
+            archive: tar.gz
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            ext: ''
+            archive: tar.gz
 
-    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
 
@@ -61,21 +63,38 @@ jobs:
       - name: Rename binary
         shell: bash
         run: |
-          mkdir -p artifacts
-          cp target/${{ matrix.target }}/release/${{ matrix.binary }} artifacts/${{ matrix.asset }}
+          BIN="target/${{ matrix.target }}/release/prosettings-tui${{ matrix.ext }}"
+          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            cp "$BIN" csprotui.exe
+          else
+            cp "$BIN" csprotui
+          fi
+
+      - name: Package (zip)
+        if: matrix.archive == 'zip'
+        shell: bash
+        run: 7z a "csprotui-${{ matrix.target }}.zip" csprotui.exe
+
+      - name: Package (tar.gz)
+        if: matrix.archive == 'tar.gz'
+        shell: bash
+        run: |
+          chmod +x csprotui
+          tar czf "csprotui-${{ matrix.target }}.tar.gz" csprotui
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.asset }}
-          path: artifacts/${{ matrix.asset }}
-          if-no-files-found: error
+          name: csprotui-${{ matrix.target }}
+          path: csprotui-${{ matrix.target }}.${{ matrix.archive == 'zip' && 'zip' || 'tar.gz' }}
 
   release:
+    name: Create Release
     needs: build
     runs-on: ubuntu-latest
     permissions:
       contents: write
+
     steps:
       - uses: actions/checkout@v4
 
@@ -83,12 +102,14 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: artifacts
-          merge-multiple: true
+
+      - name: List artifacts
+        run: find artifacts -type f
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
-          files: artifacts/*
+          files: artifacts/**/*
           draft: false
           prerelease: false
           generate_release_notes: true

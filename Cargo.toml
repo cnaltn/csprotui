@@ -1,8 +1,8 @@
 [package]
 name = "prosettings-tui"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
-description = "TUI app for viewing prosettings.net player data"
+description = "CSPROTUI - Terminal-based CS2 pro player stats viewer"
 license = "MIT"
 authors = ["Developer"]
 

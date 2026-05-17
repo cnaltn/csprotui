@@ -1,0 +1,23 @@
+{
+  "name": "csprotui",
+  "version": "0.1.1",
+  "description": "CSPROTUI - Terminal-based CS2 pro player stats viewer",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cnaltn/csprotui.git"
+  },
+  "bin": {
+    "csprotui": "./cli.js"
+  },
+  "scripts": {
+    "postinstall": "node install.js"
+  },
+  "files": [
+    "cli.js",
+    "install.js",
+    "run.js"
+  ],
+  "os": ["win32", "darwin", "linux"],
+  "cpu": ["x64", "arm64"]
+}
