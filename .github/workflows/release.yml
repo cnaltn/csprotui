@@ -90,14 +90,14 @@ jobs:
       - name: Package (zip)
         if: matrix.archive == 'zip'
         shell: bash
-        run: 7z a "csprotui-${{ matrix.name }}.zip" csprotui.exe
+        run: 7z a "csprotui-${{ matrix.name }}.zip" csprotui.exe scraper/ install.sh
 
       - name: Package (tar.gz)
         if: matrix.archive == 'tar.gz'
         shell: bash
         run: |
-          chmod +x csprotui
-          tar czf "csprotui-${{ matrix.name }}.tar.gz" csprotui
+          chmod +x csprotui install.sh
+          tar czf "csprotui-${{ matrix.name }}.tar.gz" csprotui scraper/ install.sh
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
