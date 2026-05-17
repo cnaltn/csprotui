@@ -198,6 +198,19 @@ async function main() {
   fs.unlinkSync(tempArchive);
 
   ok('Installed!');
+
+  const scraperDir = path.join(__dirname, 'scraper');
+  if (fs.existsSync(path.join(scraperDir, 'package.json'))) {
+    ewrite(`  ${color('36', 'installing scraper deps...')}\n`);
+    try {
+      execSync('npm install', { cwd: scraperDir, stdio: 'pipe' });
+      ok('Scraper ready');
+    } catch (err) {
+      fail('Failed to install scraper dependencies');
+      info('Run manually: cd ' + scraperDir + ' && npm install');
+    }
+  }
+
   ewrite(`\n  ${color('36', '>')} run: \x1b[1mcsprotui\x1b[0m\n\n`);
 
   try {

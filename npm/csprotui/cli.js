@@ -12,9 +12,16 @@ if (!fs.existsSync(binary)) {
   process.exit(1);
 }
 
+const scraperDir = path.join(__dirname, 'scraper');
+const env = { ...process.env };
+if (fs.existsSync(scraperDir)) {
+  env.CSPROTUI_SCRAPER_DIR = scraperDir;
+}
+
 const result = spawnSync(binary, process.argv.slice(2), {
   stdio: 'inherit',
   shell: false,
+  env,
 });
 
 process.exit(result.status ?? 1);
