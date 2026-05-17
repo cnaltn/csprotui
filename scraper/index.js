@@ -71,6 +71,26 @@ async function scrapePlayer(playerSlug) {
     return pre ? pre.textContent.trim() : null;
   }).catch(() => null);
 
+  // Extract gear from the rendered page
+  const gear = await page.evaluate(() => {
+    const items = [];
+    const section = document.querySelector('#gear');
+    if (section) {
+      const boxes = section.querySelectorAll('.cta-box');
+      for (const box of boxes) {
+        const nameEl = box.querySelector('h4 a');
+        const tagEl = box.querySelector('.cta-box__tag');
+        if (nameEl) {
+          items.push({
+            name: nameEl.textContent.trim(),
+            category: tagEl ? tagEl.textContent.trim() : ''
+          });
+        }
+      }
+    }
+    return items;
+  }).catch(() => []);
+
   await browser.close();
 
   const result = {
@@ -93,6 +113,8 @@ async function scrapePlayer(playerSlug) {
 
   const launchOpts = $('#cs2_launch_options').find('pre').text().trim();
   result.data.launchOptions = extractValue(launchOpts) || null;
+
+  result.data.gear = gear;
 
   return result;
 }
