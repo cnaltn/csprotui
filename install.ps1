@@ -66,7 +66,6 @@ try {
 
     $srcBinary = Join-Path $TmpDir "csprotui.exe"
     if (-not (Test-Path $srcBinary)) {
-        # try without .exe
         $srcBinary = Join-Path $TmpDir "csprotui"
     }
     if (-not (Test-Path $srcBinary)) {
@@ -79,32 +78,13 @@ try {
     }
     Ok "Installed to $InstallDir"
 
-    # Read base URL
-    $baseUrlFile = Join-Path $TmpDir "base_url"
-    $BaseUrl = ""
-    if (Test-Path $baseUrlFile) {
-        $BaseUrl = (Get-Content $baseUrlFile -Raw).Trim()
-    }
-    if (-not $BaseUrl) {
-        Warn "base_url not found in archive — you must set CSPROTUI_BASE_URL manually"
-    }
-
     # Wrapper batch
     $wrapper = Join-Path $BinDir "csprotui.cmd"
-    if ($BaseUrl) {
-        @"
-@echo off
-set "CSPROTUI_SCRAPER_DIR=$InstallDir\scraper"
-set "CSPROTUI_BASE_URL=$BaseUrl"
-"$InstallDir\csprotui.exe" %*
-"@ | Set-Content -Path $wrapper -Encoding ASCII
-    } else {
-        @"
+    @"
 @echo off
 set "CSPROTUI_SCRAPER_DIR=$InstallDir\scraper"
 "$InstallDir\csprotui.exe" %*
 "@ | Set-Content -Path $wrapper -Encoding ASCII
-    }
     Ok "Wrapper created at $wrapper"
 
     # Add to PATH
@@ -119,12 +99,7 @@ set "CSPROTUI_SCRAPER_DIR=$InstallDir\scraper"
 
     # CSPROTUI_SCRAPER_DIR env var
     [Environment]::SetEnvironmentVariable("CSPROTUI_SCRAPER_DIR", "$InstallDir\scraper", "User")
-    if ($BaseUrl) {
-        [Environment]::SetEnvironmentVariable("CSPROTUI_BASE_URL", $BaseUrl, "User")
-        Ok "Environment variables set"
-    } else {
-        Ok "Environment variable set"
-    }
+    Ok "Environment variable set"
 
     Write-Host ""
     Write-Host "CSPROTUI $Tag installed!" -ForegroundColor Green

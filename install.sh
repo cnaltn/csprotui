@@ -72,40 +72,20 @@ if [ -d "scraper" ] && command -v npm >/dev/null; then
   ok "Scraper ready"
 fi
 
-# Read base URL before moving files
-BASE_URL=""
-if [ -f "base_url" ]; then
-  BASE_URL=$(cat base_url | tr -d '\n')
-fi
-
 # Move to install dir
 mkdir -p "${INSTALL_DIR}"
-rm -rf "${INSTALL_DIR}/csprotui" "${INSTALL_DIR}/scraper" "${INSTALL_DIR}/base_url"
+rm -rf "${INSTALL_DIR}/csprotui" "${INSTALL_DIR}/scraper"
 mv csprotui "${INSTALL_DIR}/"
 [ -d "scraper" ] && mv scraper "${INSTALL_DIR}/"
-[ -n "${BASE_URL}" ] && echo "${BASE_URL}" > "${INSTALL_DIR}/base_url"
 ok "Installed to ${INSTALL_DIR}"
-
-if [ -z "${BASE_URL}" ]; then
-  warn "base_url not found in archive — you must set CSPROTUI_BASE_URL manually"
-fi
 
 # Create wrapper
 mkdir -p "${BIN_DIR}"
-if [ -n "${BASE_URL}" ]; then
-  cat > "${BIN_DIR}/csprotui" << EOF
+cat > "${BIN_DIR}/csprotui" << 'EOF'
 #!/usr/bin/env bash
-export CSPROTUI_SCRAPER_DIR="${INSTALL_DIR}/scraper"
-export CSPROTUI_BASE_URL="${BASE_URL}"
-exec "${INSTALL_DIR}/csprotui" "\$@"
+export CSPROTUI_SCRAPER_DIR="${HOME}/.local/share/csprotui/scraper"
+exec "${HOME}/.local/share/csprotui/csprotui" "$@"
 EOF
-else
-  cat > "${BIN_DIR}/csprotui" << EOF
-#!/usr/bin/env bash
-export CSPROTUI_SCRAPER_DIR="${INSTALL_DIR}/scraper"
-exec "${INSTALL_DIR}/csprotui" "\$@"
-EOF
-fi
 chmod +x "${BIN_DIR}/csprotui"
 ok "Wrapper created at ${BIN_DIR}/csprotui"
 

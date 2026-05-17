@@ -18,7 +18,14 @@ fn scraper_path() -> PathBuf {
 }
 
 fn base_url() -> Result<String, ScraperError> {
-    env::var("CSPROTUI_BASE_URL").map_err(|_| ScraperError::Exit {
+    // Runtime env var takes priority, then compile-time embed
+    if let Ok(url) = env::var("CSPROTUI_BASE_URL") {
+        return Ok(url);
+    }
+    if let Some(url) = option_env!("CSPROTUI_BASE_URL") {
+        return Ok(url.to_string());
+    }
+    Err(ScraperError::Exit {
         status: " missing config".to_string(),
         stderr: "CSPROTUI_BASE_URL not set".to_string(),
     })
