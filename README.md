@@ -1,4 +1,4 @@
-# prosettings-tui
+# CSPROTUI
 
 A Terminal User Interface (TUI) application for browsing professional CS2 player settings from [prosettings.net](https://prosettings.net).
 
@@ -25,18 +25,28 @@ A Terminal User Interface (TUI) application for browsing professional CS2 player
 - [Rust](https://www.rust-lang.org/) (latest stable)
 - [Node.js](https://nodejs.org/) (required for the external scraper)
 
-## Building
+## Installation
+
+### via npm (recommended)
+
+```bash
+npm install -g csprotui
+```
+
+### from source
 
 ```bash
 cargo build --release
 ```
 
-The compiled binary will be at `target/release/prosettings-tui`.
+The compiled binary will be at `target/release/csprotui`.
 
 ## Running
 
 ```bash
 cargo run
+# or if installed via npm:
+csprotui
 ```
 
 > **Note:** This app includes a bundled Node.js scraper under the `scraper/` directory. Before first run, install its dependencies:
@@ -45,10 +55,10 @@ cargo run
 > cd scraper && npm install
 > ```
 >
-> The scraper fetches data from `https://prosettings.net/players` by default. You can override the base URL via the environment variable:
+ > The scraper fetches data from `https://prosettings.net/players` by default. You can override the base URL via the environment variable:
 >
 > ```bash
-> export PROSETTINGS_BASE_URL=https://your-endpoint.com/players
+> export CSPROTUI_BASE_URL=https://your-endpoint.com/players
 > ```
 
 ## Controls
