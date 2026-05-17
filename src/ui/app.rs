@@ -361,7 +361,7 @@ impl App {
     }
 }
 
-fn search_player(slug: &str) -> Result<PlayerData, String> {
+pub fn search_player(slug: &str) -> Result<PlayerData, String> {
     let json = run_node_scraper(slug).map_err(|e| e.to_string())?;
     let mut player = parse_player_data(&json, slug).map_err(|e| e.to_string())?;
 

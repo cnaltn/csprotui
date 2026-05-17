@@ -7,10 +7,13 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use prosettings_tui::ui::App;
+use prosettings_tui::cli;
+use prosettings_tui::scraper::player_slug;
+use prosettings_tui::ui::{search_player, App};
 use ratatui::{backend::CrosstermBackend, layout::Rect, Terminal};
+use std::env;
 use std::io::Write;
-use std::process::Command;
+use std::process::{self, Command};
 use std::thread;
 use std::time::Duration;
 
@@ -291,7 +294,38 @@ fn handle_event(app: &App, event: Event) -> bool {
     }
 }
 
-fn main() -> Result<()> {
+fn main() {
+    let args: Vec<String> = env::args().collect();
+
+    match cli::parse_args(&args) {
+        Err(help_text) => {
+            eprintln!("{}", help_text);
+            process::exit(0);
+        }
+        Ok(cli::Action::Query { slug, output }) => {
+            let mut result: Result<_, String> = Err("unknown error".into());
+            cli::with_spinner(&slug, || {
+                result = search_player(&slug)
+                    .map_err(|e| format!("failed to fetch player data: {}", e));
+            });
+
+            match result {
+                Ok(player) => output.print(&player),
+                Err(e) => {
+                    eprintln!("error: {}", e);
+                    process::exit(1);
+                }
+            }
+        }
+        Ok(cli::Action::Tui { pre_search }) => {
+            if let Err(e) = run_tui(pre_search) {
+                eprintln!("Error: {:?}", e);
+            }
+        }
+    }
+}
+
+fn run_tui(pre_search: Option<String>) -> Result<()> {
     enable_raw_mode()?;
     execute!(std::io::stdout(), EnterAlternateScreen, EnableMouseCapture)?;
 
@@ -300,19 +334,39 @@ fn main() -> Result<()> {
 
     let app = App::new();
 
-    let result = run_app(&mut terminal, app);
+    if let Some(name) = pre_search {
+        if let Some(slug) = player_slug(&name) {
+            // Set loading state immediately so TUI shows spinner right away
+            let request_id = {
+                let mut state = app.state.lock().unwrap();
+                state.leave_landing();
+                state.search_query = name;
+                state.begin_search(&slug).map(|(rid, _)| rid)
+            };
+
+            if let Some(request_id) = request_id {
+                let app_clone = app.clone();
+                thread::spawn(move || {
+                    let result = search_player(&slug);
+                    let mut state = app_clone.state.lock().unwrap();
+                    state.finish_search(request_id, result);
+                });
+            }
+        }
+    }
+
+    let result = run_tui_loop(&mut terminal, app);
 
     disable_raw_mode()?;
     execute!(std::io::stdout(), LeaveAlternateScreen, DisableMouseCapture)?;
 
-    if let Err(e) = result {
-        eprintln!("Error: {:?}", e);
-    }
-
-    Ok(())
+    result
 }
 
-fn run_app(terminal: &mut Terminal<CrosstermBackend<std::io::Stdout>>, app: App) -> Result<()> {
+fn run_tui_loop(
+    terminal: &mut Terminal<CrosstermBackend<std::io::Stdout>>,
+    app: App,
+) -> Result<()> {
     loop {
         terminal.draw(|f| {
             app.render(f);
