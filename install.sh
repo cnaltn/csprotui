@@ -143,11 +143,35 @@ ok "Wrapper created at ${BIN_DIR}/csprotui"
 
 # PATH check
 if [[ ":${PATH}:" != *":${BIN_DIR}:"* ]]; then
-  warn "${BIN_DIR} is not in your PATH"
-  echo "    Add this to your shell config:"
-  echo "    export PATH=\"\${HOME}/.local/bin:\${PATH}\""
+  echo ""
+  echo -e "  ${YELLOW}>>> PATH not configured <<<${RST}"
+  echo -e "  ${WHITE}${BIN_DIR} is not in your PATH.${RST}"
+  echo ""
+  echo -e "  ${DIM}The ${CYAN}csprotui${RST}${DIM} command won't be available until you add it.${RST}"
+
+  # Detect shell for helpful instructions
+  if echo "${SHELL}" | grep -q "zsh"; then
+    echo "  Add this line to ${DIM}~/.zshrc${RST}:"
+    echo -e "    ${GREEN}export PATH=\"\${HOME}/.local/bin:\${PATH}\"${RST}"
+    echo "  Then run: ${GREEN}source ~/.zshrc${RST}"
+  elif echo "${SHELL}" | grep -q "bash"; then
+    echo "  Add this line to ${DIM}~/.bashrc${RST}:"
+    echo -e "    ${GREEN}export PATH=\"\${HOME}/.local/bin:\${PATH}\"${RST}"
+    echo "  Then run: ${GREEN}source ~/.bashrc${RST}"
+  else
+    echo "  Add this line to your shell config:"
+    echo -e "    ${GREEN}export PATH=\"\${HOME}/.local/bin:\${PATH}\"${RST}"
+  fi
+  echo ""
 fi
 
 echo ""
 echo -e "${GREEN}CSPROTUI ${TAG} installed!${RST}"
-echo "    Run: ${GREEN}csprotui${RST}"
+if [[ ":${PATH}:" == *":${BIN_DIR}:"* ]]; then
+  echo "    Run: ${GREEN}csprotui${RST}"
+fi
+
+echo ""
+echo -e "${DIM}To uninstall:${RST}"
+echo -e "    ${YELLOW}rm -rf ${INSTALL_DIR} ${BIN_DIR}/csprotui${RST}"
+echo ""

@@ -139,6 +139,13 @@ set "CSPROTUI_SCRAPER_DIR=$InstallDir\scraper"
     Write-Host "CSPROTUI $Tag installed!" -ForegroundColor Green
     Write-Host "    Run: csprotui"
     Write-Host "    (restart your terminal if PATH was just updated)"
+
+    Write-Host ""
+    Write-Host -NoNewline "To uninstall: " -ForegroundColor DarkGray
+    Write-Host -NoNewline "Remove-Item -Recurse -Force $InstallDir" -ForegroundColor Yellow
+    Write-Host -NoNewline ", " -ForegroundColor DarkGray
+    Write-Host "$BinDir\csprotui.cmd" -ForegroundColor Yellow
+    Write-Host "    (also remove $BinDir from PATH manually if desired)"
 } finally {
     Remove-Item -Recurse -Force $TmpDir -ErrorAction SilentlyContinue
 }

@@ -35,6 +35,8 @@ fn copy_to_clipboard(text: &str) -> bool {
     copy("wl-copy", &[])
         .or_else(|| copy("xclip", &["-selection", "clipboard"]))
         .or_else(|| copy("xsel", &["--clipboard", "--input"]))
+        .or_else(|| copy("clip", &[]))
+        .or_else(|| copy("pbcopy", &[]))
         .unwrap_or(false)
 }
 
