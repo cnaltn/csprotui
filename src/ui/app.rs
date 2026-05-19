@@ -25,6 +25,7 @@ pub struct AppState {
     pub toast_msg: String,
     pub toast_shown_at: Option<Instant>,
     pub scroll_offset: usize,
+    pub visible_rows: usize,
     pub theme_selector: Option<ThemeSelectorState>,
     pub settings_rect: Option<Rect>,
     pub on_landing: bool,
@@ -47,6 +48,7 @@ impl AppState {
             toast_msg: String::new(),
             toast_shown_at: None,
             scroll_offset: 0,
+            visible_rows: 0,
             theme_selector: None,
             settings_rect: None,
             on_landing: true,
@@ -152,12 +154,22 @@ impl AppState {
         self.scroll_offset = self.scroll_offset.saturating_add(1);
     }
 
+    pub fn scroll_by(&mut self, delta: isize) {
+        if delta.is_negative() {
+            self.scroll_offset = self.scroll_offset.saturating_sub(delta.unsigned_abs());
+        } else {
+            self.scroll_offset = self.scroll_offset.saturating_add(delta as usize);
+        }
+    }
+
     pub fn scroll_page_up(&mut self) {
-        self.scroll_offset = self.scroll_offset.saturating_sub(10);
+        let page = self.visible_rows.max(1);
+        self.scroll_offset = self.scroll_offset.saturating_sub(page);
     }
 
     pub fn scroll_page_down(&mut self) {
-        self.scroll_offset = self.scroll_offset.saturating_add(10);
+        let page = self.visible_rows.max(1);
+        self.scroll_offset = self.scroll_offset.saturating_add(page);
     }
 
     pub fn scroll_top(&mut self) {
@@ -166,6 +178,10 @@ impl AppState {
 
     pub fn scroll_bottom(&mut self) {
         self.scroll_offset = usize::MAX;
+    }
+
+    pub fn clamp_scroll_to(&mut self, max_scroll: usize) {
+        self.scroll_offset = self.scroll_offset.min(max_scroll);
     }
 
     pub fn clear_player(&mut self) {
@@ -280,6 +296,11 @@ impl App {
     pub fn scroll_down(&self) {
         let mut state = self.state.lock().unwrap();
         state.scroll_down();
+    }
+
+    pub fn scroll_by(&self, delta: isize) {
+        let mut state = self.state.lock().unwrap();
+        state.scroll_by(delta);
     }
 
     pub fn scroll_page_up(&self) {

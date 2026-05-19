@@ -88,8 +88,8 @@ fn scroll_mouse_if_player_loaded(app: &App, kind: MouseEventKind) -> bool {
     }
 
     match kind {
-        MouseEventKind::ScrollUp => app.scroll_up(),
-        MouseEventKind::ScrollDown => app.scroll_down(),
+        MouseEventKind::ScrollUp => app.scroll_by(-3),
+        MouseEventKind::ScrollDown => app.scroll_by(3),
         _ => return false,
     }
 

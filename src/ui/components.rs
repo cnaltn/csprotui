@@ -118,6 +118,11 @@ struct SettingsTableView {
     dimmed: bool,
 }
 
+struct ScrollMut<'a> {
+    offset: &'a mut usize,
+    visible_rows: &'a mut usize,
+}
+
 impl App {
     pub fn render(&self, f: &mut Frame) {
         let mut state = self.state.lock().unwrap();
@@ -431,6 +436,16 @@ impl App {
 
         if let Some(player) = state.player_data.as_ref() {
             let dimmed = state.is_loading;
+            let import_code_owned = player
+                .data
+                .crosshair
+                .import_code
+                .clone()
+                .filter(|code| !code.trim().is_empty());
+            let copied = state.copied;
+            let current_scroll = state.scroll_offset;
+            let scroll_mut = &mut state.scroll_offset;
+            let visible_mut = &mut state.visible_rows;
             self.render_player_info(f, chunks[0], player, theme, dimmed);
             self.render_tabs(f, chunks[1], state.current_tab, theme, dimmed);
             self.render_settings_table(
@@ -440,18 +455,13 @@ impl App {
                 theme,
                 SettingsTableView {
                     tab: state.current_tab,
-                    scroll_offset: state.scroll_offset,
+                    scroll_offset: current_scroll,
                     dimmed,
                 },
+                &mut ScrollMut { offset: scroll_mut, visible_rows: visible_mut },
             );
 
-            let import_code = player
-                .data
-                .crosshair
-                .import_code
-                .as_deref()
-                .filter(|code| !code.trim().is_empty());
-            self.render_import_code(f, chunks[3], import_code, state.copied, theme, dimmed);
+            self.render_import_code(f, chunks[3], import_code_owned.as_deref(), copied, theme, dimmed);
         } else {
             if let Some(err) = state.error_message.as_ref() {
                 self.render_error_block(f, chunks[0], err, theme);
@@ -568,6 +578,7 @@ impl App {
         player: &PlayerData,
         theme: &Theme,
         view: SettingsTableView,
+        scroll: &mut ScrollMut,
     ) {
         let title = format!(" {} ", view.tab);
         let block = block_with_title_dimmed(theme, &title, view.dimmed);
@@ -582,6 +593,7 @@ impl App {
                 theme,
                 view.scroll_offset,
                 view.dimmed,
+                scroll,
             ),
             Tab::Crosshair => self.render_crosshair_table(
                 f,
@@ -590,6 +602,7 @@ impl App {
                 theme,
                 view.scroll_offset,
                 view.dimmed,
+                scroll,
             ),
             Tab::Viewmodel => self.render_viewmodel_table(
                 f,
@@ -598,6 +611,7 @@ impl App {
                 theme,
                 view.scroll_offset,
                 view.dimmed,
+                scroll,
             ),
             Tab::Video => self.render_video_table(
                 f,
@@ -606,6 +620,7 @@ impl App {
                 theme,
                 view.scroll_offset,
                 view.dimmed,
+                scroll,
             ),
             Tab::Radar => self.render_radar_table(
                 f,
@@ -614,6 +629,7 @@ impl App {
                 theme,
                 view.scroll_offset,
                 view.dimmed,
+                scroll,
             ),
             Tab::Hud => self.render_hud_table(
                 f,
@@ -622,6 +638,7 @@ impl App {
                 theme,
                 view.scroll_offset,
                 view.dimmed,
+                scroll,
             ),
             Tab::LaunchOptions => self.render_launch_options_table(
                 f,
@@ -630,6 +647,7 @@ impl App {
                 theme,
                 view.scroll_offset,
                 view.dimmed,
+                scroll,
             ),
             Tab::Gear => {
                 let items: Vec<(String, String)> = player
@@ -645,6 +663,7 @@ impl App {
                     theme,
                     view.scroll_offset,
                     view.dimmed,
+                    scroll,
                 );
             }
         }
@@ -658,6 +677,7 @@ impl App {
         theme: &Theme,
         scroll_offset: usize,
         dimmed: bool,
+        scroll: &mut ScrollMut,
     ) {
         let items = visible_items(&[
             ("DPI", mouse.dpi.as_deref()),
@@ -670,7 +690,7 @@ impl App {
             ("Hz", mouse.hz.as_deref()),
             ("Windows Sensitivity", mouse.windows_sensitivity.as_deref()),
         ]);
-        self.render_key_value_table(f, area, &items, theme, scroll_offset, dimmed);
+        self.render_key_value_table(f, area, &items, theme, scroll_offset, dimmed, scroll);
     }
 
     fn render_crosshair_table(
@@ -681,6 +701,7 @@ impl App {
         theme: &Theme,
         scroll_offset: usize,
         dimmed: bool,
+        scroll: &mut ScrollMut,
     ) {
         let items = visible_items(&[
             ("Style", crosshair.style.as_deref()),
@@ -709,7 +730,7 @@ impl App {
             ("Sniper Width", crosshair.sniper_width.as_deref()),
         ]);
 
-        self.render_key_value_table(f, area, &items, theme, scroll_offset, dimmed);
+        self.render_key_value_table(f, area, &items, theme, scroll_offset, dimmed, scroll);
     }
 
     fn render_video_table(
@@ -720,6 +741,7 @@ impl App {
         theme: &Theme,
         scroll_offset: usize,
         dimmed: bool,
+        scroll: &mut ScrollMut,
     ) {
         let items = visible_items(&[
             ("Resolution", video.resolution.as_deref()),
@@ -743,7 +765,7 @@ impl App {
             ("HDR", video.hdr.as_deref()),
             ("FSR", video.fsr.as_deref()),
         ]);
-        self.render_key_value_table(f, area, &items, theme, scroll_offset, dimmed);
+        self.render_key_value_table(f, area, &items, theme, scroll_offset, dimmed, scroll);
     }
 
     fn render_radar_table(
@@ -754,6 +776,7 @@ impl App {
         theme: &Theme,
         scroll_offset: usize,
         dimmed: bool,
+        scroll: &mut ScrollMut,
     ) {
         let items = visible_items(&[
             ("Always Centered", radar.always_centered.as_deref()),
@@ -765,7 +788,7 @@ impl App {
             ("HUD Scale", radar.hud_scale.as_deref()),
             ("Scale", radar.scale.as_deref()),
         ]);
-        self.render_key_value_table(f, area, &items, theme, scroll_offset, dimmed);
+        self.render_key_value_table(f, area, &items, theme, scroll_offset, dimmed, scroll);
     }
 
     fn render_hud_table(
@@ -776,12 +799,13 @@ impl App {
         theme: &Theme,
         scroll_offset: usize,
         dimmed: bool,
+        scroll: &mut ScrollMut,
     ) {
         let items = visible_items(&[
             ("HUD Scaling", hud.scaling.as_deref()),
             ("HUD Color", hud.color.as_deref()),
         ]);
-        self.render_key_value_table(f, area, &items, theme, scroll_offset, dimmed);
+        self.render_key_value_table(f, area, &items, theme, scroll_offset, dimmed, scroll);
     }
 
     fn render_viewmodel_table(
@@ -792,6 +816,7 @@ impl App {
         theme: &Theme,
         scroll_offset: usize,
         dimmed: bool,
+        scroll: &mut ScrollMut,
     ) {
         let items = visible_items(&[
             ("FOV", viewmodel.fov.as_deref()),
@@ -801,7 +826,7 @@ impl App {
             ("Preset", viewmodel.presetpos.as_deref()),
             ("Use New Bob", viewmodel.use_new_bob.as_deref()),
         ]);
-        self.render_key_value_table(f, area, &items, theme, scroll_offset, dimmed);
+        self.render_key_value_table(f, area, &items, theme, scroll_offset, dimmed, scroll);
     }
 
     fn render_launch_options_table(
@@ -812,9 +837,10 @@ impl App {
         theme: &Theme,
         scroll_offset: usize,
         dimmed: bool,
+        scroll: &mut ScrollMut,
     ) {
         let items = visible_items(&[("Launch Options", launch_options.as_deref())]);
-        self.render_key_value_table(f, area, &items, theme, scroll_offset, dimmed);
+        self.render_key_value_table(f, area, &items, theme, scroll_offset, dimmed, scroll);
     }
 
     fn render_items_table(
@@ -825,6 +851,7 @@ impl App {
         theme: &Theme,
         scroll_offset: usize,
         dimmed: bool,
+        scroll: &mut ScrollMut,
     ) {
         let bg = c(theme, tokens::BG_BASE);
         let accent = c(theme, tokens::ACCENT_PRIMARY);
@@ -868,6 +895,9 @@ impl App {
         let max_offset = total_items.saturating_sub(visible_rows.max(1));
         let offset = scroll_offset.min(max_offset);
 
+        *scroll.offset = offset;
+        *scroll.visible_rows = visible_rows;
+
         let needs_scroll = total_items > visible_rows;
         let scrollbar_width: u16 = if needs_scroll { 2 } else { 0 };
         let table_width = area.width.saturating_sub(scrollbar_width);
@@ -900,8 +930,14 @@ impl App {
                     Style::default().fg(c(theme, tokens::BORDER_UNFOCUSED)),
                     dimmed,
                 ));
-            let mut sb_state = ScrollbarState::new(total_items)
-                .position(offset)
+            let content_len = max_offset + visible_rows;
+            let sb_position = if max_offset == 0 {
+                0
+            } else {
+                offset.saturating_mul(content_len.saturating_sub(1)) / max_offset
+            };
+            let mut sb_state = ScrollbarState::new(content_len)
+                .position(sb_position)
                 .viewport_content_length(visible_rows);
             f.render_stateful_widget(scrollbar, sb_area, &mut sb_state);
         }
@@ -915,6 +951,7 @@ impl App {
         theme: &Theme,
         scroll_offset: usize,
         dimmed: bool,
+        scroll: &mut ScrollMut,
     ) {
         let bg = c(theme, tokens::BG_BASE);
         let accent = c(theme, tokens::ACCENT_PRIMARY);
@@ -958,6 +995,9 @@ impl App {
         let max_offset = total_items.saturating_sub(visible_rows.max(1));
         let offset = scroll_offset.min(max_offset);
 
+        *scroll.offset = offset;
+        *scroll.visible_rows = visible_rows;
+
         let needs_scroll = total_items > visible_rows;
         let scrollbar_width: u16 = if needs_scroll { 2 } else { 0 };
         let table_width = area.width.saturating_sub(scrollbar_width);
@@ -994,8 +1034,14 @@ impl App {
                     Style::default().fg(c(theme, tokens::BORDER_UNFOCUSED)),
                     dimmed,
                 ));
-            let mut sb_state = ScrollbarState::new(total_items)
-                .position(offset)
+            let content_len = max_offset + visible_rows;
+            let sb_position = if max_offset == 0 {
+                0
+            } else {
+                offset.saturating_mul(content_len.saturating_sub(1)) / max_offset
+            };
+            let mut sb_state = ScrollbarState::new(content_len)
+                .position(sb_position)
                 .viewport_content_length(visible_rows);
             f.render_stateful_widget(scrollbar, sb_area, &mut sb_state);
         }

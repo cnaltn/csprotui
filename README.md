@@ -105,7 +105,7 @@ csprotui
 | Key | Action |
 |-----|--------|
 | `↑` / `↓` | Scroll settings |
-| `PgUp` / `PgDn` | Scroll page by page (10 rows) |
+| `PgUp` / `PgDn` | Scroll page by page (viewport-sized) |
 | `Home` / `End` | Jump to top / bottom |
 | `Tab` | Next tab (Mouse → Crosshair → ... → Launch Options) |
 | `Shift+Tab` | Previous tab |
