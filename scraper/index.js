@@ -1,7 +1,8 @@
 import axios from 'axios';
 import * as cheerio from 'cheerio';
-import puppeteer from 'puppeteer';
 import { BASE_URL } from './config.js';
+
+const REQUEST_TIMEOUT_MS = 15000;
 
 function extractValue(text) {
   if (!text) return null;
@@ -29,69 +30,51 @@ function parseTableSection($, sectionId) {
   return result;
 }
 
+function classifyHttpError(status) {
+  if (status === 404) return 'PLAYER_NOT_FOUND';
+  if (status === 403 || status === 429) return 'ACCESS_BLOCKED';
+  if (status >= 500) return 'SERVER_ERROR';
+  return 'FETCH_FAILED';
+}
+
 async function scrapePlayer(playerSlug) {
   const url = `${BASE_URL}/${playerSlug}`;
 
-  const [{ data }, browser] = await Promise.all([
-    axios.get(url, {
+  let data;
+  try {
+    const response = await axios.get(url, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-      }
-    }),
-    puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-extensions']
-    })
-  ]);
+      },
+      timeout: REQUEST_TIMEOUT_MS,
+      maxRedirects: 5
+    });
+    data = response.data;
+  } catch (err) {
+    if (err.code === 'ECONNABORTED') {
+      throw new Error(JSON.stringify({ error: 'TIMEOUT', message: 'Request timed out.' }));
+    }
+    if (err.response) {
+      const code = classifyHttpError(err.response.status);
+      throw new Error(JSON.stringify({
+        error: code,
+        message: `HTTP ${err.response.status} from prosettings.net.`
+      }));
+    }
+    if (err.code === 'ENOTFOUND' || err.code === 'ECONNREFUSED') {
+      throw new Error(JSON.stringify({
+        error: 'NETWORK_ERROR',
+        message: 'Cannot reach prosettings.net. Check your internet connection.'
+      }));
+    }
+    throw new Error(JSON.stringify({
+      error: 'FETCH_FAILED',
+      message: err.message || 'Unknown network error.'
+    }));
+  }
 
   const $ = cheerio.load(data);
   const playerName = extractValue($('h1').first().text()) || playerSlug;
-
-  const page = await browser.newPage();
-  await page.setRequestInterception(true);
-  page.on('request', req => {
-    if (['image', 'stylesheet', 'font', 'media'].includes(req.resourceType())) {
-      req.abort();
-    } else {
-      req.continue();
-    }
-  });
-
-  await page.goto(url, {
-    waitUntil: 'domcontentloaded',
-    timeout: 10000
-  });
-
-  // The first page load sometimes returns stale data (Cloudflare).
-  // Reload once to get fresh content.
-  await page.reload({ waitUntil: 'domcontentloaded', timeout: 10000 });
-
-  const crosshairCode = await page.evaluate(() => {
-    const pre = document.querySelector('#cs2_crosshair pre.js-csr-pre');
-    return pre ? pre.textContent.trim() : null;
-  }).catch(() => null);
-
-  // Extract gear from the rendered page
-  const gear = await page.evaluate(() => {
-    const items = [];
-    const section = document.querySelector('#gear');
-    if (section) {
-      const boxes = section.querySelectorAll('.cta-box');
-      for (const box of boxes) {
-        const nameEl = box.querySelector('h4 a');
-        const tagEl = box.querySelector('.cta-box__tag');
-        if (nameEl) {
-          items.push({
-            name: nameEl.textContent.trim(),
-            category: tagEl ? tagEl.textContent.trim() : ''
-          });
-        }
-      }
-    }
-    return items;
-  }).catch(() => []);
-
-  await browser.close();
 
   const result = {
     player: playerName,
@@ -100,7 +83,7 @@ async function scrapePlayer(playerSlug) {
     data: {
       mouse: parseTableSection($, '#cs2_mouse'),
       crosshair: {
-        importCode: crosshairCode,
+        importCode: null,
         ...parseTableSection($, '#cs2_crosshair')
       },
       viewmodel: parseTableSection($, '#cs2_viewmodel'),
@@ -113,8 +96,6 @@ async function scrapePlayer(playerSlug) {
 
   const launchOpts = $('#cs2_launch_options').find('pre').text().trim();
   result.data.launchOptions = extractValue(launchOpts) || null;
-
-  result.data.gear = gear;
 
   return result;
 }
@@ -130,9 +111,21 @@ async function main() {
   }
 
   const playerSlug = args[0];
-  const result = await scrapePlayer(playerSlug);
 
-  process.stdout.write(JSON.stringify(result));
+  try {
+    const result = await scrapePlayer(playerSlug);
+    process.stdout.write(JSON.stringify(result));
+  } catch (err) {
+    // Write structured error JSON to stderr so Rust can parse it
+    let errorJson = err.message;
+    try {
+      JSON.parse(errorJson); // validate
+    } catch {
+      errorJson = JSON.stringify({ error: 'UNKNOWN', message: err.message || 'Unknown scraper error.' });
+    }
+    process.stderr.write(errorJson);
+    process.exit(1);
+  }
 }
 
 export { scrapePlayer };

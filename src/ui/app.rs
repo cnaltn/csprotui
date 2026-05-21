@@ -383,8 +383,8 @@ impl App {
 }
 
 pub fn search_player(slug: &str) -> Result<PlayerData, String> {
-    let json = run_node_scraper(slug).map_err(|e| e.to_string())?;
-    let mut player = parse_player_data(&json, slug).map_err(|e| e.to_string())?;
+    let json = run_node_scraper(slug).map_err(|e| e.user_message())?;
+    let mut player = parse_player_data(&json, slug).map_err(|e| e.user_message())?;
 
     if let Ok(Some(totalcsgo)) = fetch_totalcsgo_crosshair(slug) {
         enrich_with_totalcsgo_crosshair(&mut player, totalcsgo);

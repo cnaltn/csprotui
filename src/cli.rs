@@ -30,7 +30,6 @@ pub enum Output {
     Radar,
     Hud,
     Launch,
-    Gear,
     All,
     Json,
 }
@@ -177,11 +176,6 @@ impl Output {
                     let _ = writeln!(stdout, "{}", opts);
                 }
             }
-            Output::Gear => {
-                for item in &player.data.gear {
-                    let _ = writeln!(stdout, "{}: {}", item.category.to_lowercase(), item.name);
-                }
-            }
             Output::All => {
                 Output::Mouse.print(player);
                 println!();
@@ -282,10 +276,6 @@ pub fn parse_args(args: &[String]) -> Result<Action, String> {
                 flags.push(arg.clone());
                 output = Some(Output::Launch);
             }
-            "--gear" => {
-                flags.push(arg.clone());
-                output = Some(Output::Gear);
-            }
             "-a" | "--all" => {
                 flags.push(arg.clone());
                 output = Some(Output::All);
@@ -345,7 +335,6 @@ Flags:
   -r, --radar         Radar settings
   --hud               HUD settings
   -l, --launch        Launch options
-  --gear              Gear (monitor, mouse, keyboard, etc.)
   -a, --all           All settings
   -j, --json          Full JSON output
   -h, --help          Show this help

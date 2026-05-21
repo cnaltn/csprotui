@@ -25,26 +25,56 @@ fn base_url() -> Result<String, ScraperError> {
     if let Some(url) = option_env!("CSPROTUI_BASE_URL") {
         return Ok(url.to_string());
     }
-    Err(ScraperError::Exit {
-        status: " missing config".to_string(),
-        stderr: "CSPROTUI_BASE_URL not set".to_string(),
+    Err(ScraperError::ConfigMissing {
+        key: "CSPROTUI_BASE_URL".to_string(),
     })
 }
 
 #[derive(Debug, thiserror::Error)]
 pub enum ScraperError {
-    #[error("failed to run scraper at {path}: {source}")]
+    #[error("Node.js is not installed or not in PATH.")]
+    NodeNotFound,
+
+    #[error("Failed to run scraper at {path}: {source}")]
     Command {
         path: String,
         #[source]
         source: std::io::Error,
     },
-    #[error("scraper failed{status}: {stderr}")]
+
+    #[error("Player '{slug}' not found on prosettings.net.")]
+    PlayerNotFound { slug: String },
+
+    #[error("Access blocked by prosettings.net. Try again in a few seconds.")]
+    AccessBlocked,
+
+    #[error("Connection timed out. Check your internet connection.")]
+    NetworkTimeout,
+
+    #[error("Cannot reach prosettings.net. Check your internet connection.")]
+    NetworkError,
+
+    #[error("prosettings.net server error. Try again later.")]
+    ServerError,
+
+    #[error("Scraper failed{status}: {stderr}")]
     Exit { status: String, stderr: String },
-    #[error("failed to parse scraper JSON: {0}")]
+
+    #[error("Failed to parse scraper JSON: {0}")]
     Json(#[from] serde_json::Error),
-    #[error("failed to fetch TotalCSGO crosshair: {0}")]
+
+    #[error("Failed to fetch TotalCSGO crosshair: {0}")]
     TotalCsgoFetch(#[from] reqwest::Error),
+
+    #[error("Missing config: {key}")]
+    ConfigMissing { key: String },
+}
+
+impl ScraperError {
+    /// Returns a user-friendly message suitable for UI display.
+    pub fn user_message(&self) -> String {
+        self.to_string()
+    }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -61,18 +91,53 @@ pub fn run_node_scraper(slug: &str) -> Result<String, ScraperError> {
         .arg(slug)
         .env("CSPROTUI_BASE_URL", base_url()?)
         .output()
-        .map_err(|source| ScraperError::Command {
-            path: path_str.clone(),
-            source,
+        .map_err(|source| {
+            if source.kind() == std::io::ErrorKind::NotFound {
+                ScraperError::NodeNotFound
+            } else {
+                ScraperError::Command {
+                    path: path_str.clone(),
+                    source,
+                }
+            }
         })?;
 
     if !output.status.success() {
         let status = output
             .status
             .code()
-            .map(|code| format!(" with status {code}"))
-            .unwrap_or_else(|| " by signal".to_string());
+            .map(|code| format!(" (exit code {code})"))
+            .unwrap_or_else(|| " (killed by signal)".to_string());
         let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
+
+        // Try to parse structured error JSON from the Node scraper
+        if let Ok(value) = serde_json::from_str::<serde_json::Value>(&stderr) {
+            if let Some(error_code) = value.get("error").and_then(|v| v.as_str()) {
+                let message = value
+                    .get("message")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or(&stderr)
+                    .to_string();
+                match error_code {
+                    "PLAYER_NOT_FOUND" => {
+                        return Err(ScraperError::PlayerNotFound {
+                            slug: slug.to_string(),
+                        });
+                    }
+                    "ACCESS_BLOCKED" => return Err(ScraperError::AccessBlocked),
+                    "TIMEOUT" => return Err(ScraperError::NetworkTimeout),
+                    "NETWORK_ERROR" => return Err(ScraperError::NetworkError),
+                    "SERVER_ERROR" => return Err(ScraperError::ServerError),
+                    _ => {
+                        return Err(ScraperError::Exit {
+                            status,
+                            stderr: message,
+                        });
+                    }
+                }
+            }
+        }
+
         return Err(ScraperError::Exit {
             status,
             stderr: if stderr.is_empty() {
@@ -132,13 +197,15 @@ fn totalcsgo_client() -> Result<reqwest::blocking::Client, reqwest::Error> {
 
 pub fn enrich_with_totalcsgo_crosshair(player: &mut PlayerData, totalcsgo: TotalCsgoCrosshair) {
     player.data.crosshair.import_code = Some(totalcsgo.code);
-    player.data.crosshair.command = Some(totalcsgo.command.clone());
+    if !totalcsgo.command.is_empty() {
+        player.data.crosshair.command = Some(totalcsgo.command.clone());
 
-    for command in totalcsgo.command.split(';') {
-        let mut parts = command.split_whitespace();
-        let Some(key) = parts.next() else { continue };
-        let Some(value) = parts.next() else { continue };
-        set_crosshair_command_value(&mut player.data.crosshair, key, value);
+        for command in totalcsgo.command.split(';') {
+            let mut parts = command.split_whitespace();
+            let Some(key) = parts.next() else { continue };
+            let Some(value) = parts.next() else { continue };
+            set_crosshair_command_value(&mut player.data.crosshair, key, value);
+        }
     }
 }
 

@@ -27,8 +27,6 @@ pub struct PlayerSettings {
     #[serde(rename = "launchOptions")]
     #[serde(default)]
     pub launch_options: Option<String>,
-    #[serde(default)]
-    pub gear: Vec<GearItem>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -185,14 +183,6 @@ pub struct BobSettings {
     pub cycle: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct GearItem {
-    #[serde(default)]
-    pub name: String,
-    #[serde(default)]
-    pub category: String,
-}
-
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum Tab {
     Mouse,
@@ -201,19 +191,17 @@ pub enum Tab {
     Video,
     Radar,
     Hud,
-    Gear,
     LaunchOptions,
 }
 
 impl Tab {
-    pub const ALL: [Self; 8] = [
+    pub const ALL: [Self; 7] = [
         Self::Mouse,
         Self::Crosshair,
         Self::Viewmodel,
         Self::Video,
         Self::Radar,
         Self::Hud,
-        Self::Gear,
         Self::LaunchOptions,
     ];
 
@@ -243,7 +231,6 @@ impl Tab {
             Tab::Video => "Video",
             Tab::Radar => "Radar",
             Tab::Hud => "HUD",
-            Tab::Gear => "Gear",
             Tab::LaunchOptions => "Launch Options",
         }
     }

@@ -649,23 +649,6 @@ impl App {
                 view.dimmed,
                 scroll,
             ),
-            Tab::Gear => {
-                let items: Vec<(String, String)> = player
-                    .data
-                    .gear
-                    .iter()
-                    .map(|g| (g.name.clone(), g.category.clone()))
-                    .collect();
-                self.render_items_table(
-                    f,
-                    inner,
-                    &items,
-                    theme,
-                    view.scroll_offset,
-                    view.dimmed,
-                    scroll,
-                );
-            }
         }
     }
 
@@ -841,106 +824,6 @@ impl App {
     ) {
         let items = visible_items(&[("Launch Options", launch_options.as_deref())]);
         self.render_key_value_table(f, area, &items, theme, scroll_offset, dimmed, scroll);
-    }
-
-    fn render_items_table(
-        &self,
-        f: &mut Frame,
-        area: Rect,
-        items: &[(String, String)],
-        theme: &Theme,
-        scroll_offset: usize,
-        dimmed: bool,
-        scroll: &mut ScrollMut,
-    ) {
-        let bg = c(theme, tokens::BG_BASE);
-        let accent = c(theme, tokens::ACCENT_PRIMARY);
-
-        if items.is_empty() {
-            let placeholder = Paragraph::new("No items available")
-                .style(dim_if(theme, style_muted(theme), dimmed))
-                .alignment(Alignment::Center);
-            f.render_widget(placeholder, area);
-            return;
-        }
-
-        let header = Row::new(vec![Cell::from("Category"), Cell::from("Item")]).style(dim_if(
-            theme,
-            Style::default().fg(accent).bg(bg).bold(),
-            dimmed,
-        ));
-
-        let all_rows: Vec<Row> = items
-            .iter()
-            .enumerate()
-            .map(|(idx, (name, category))| {
-                let row_bg = if idx % 2 == 0 {
-                    bg
-                } else {
-                    c(theme, tokens::BG_PANEL)
-                };
-                let key_style = dim_if(theme, style_key(theme).bg(row_bg), dimmed);
-                let val_style = dim_if(theme, style_value(theme).bg(row_bg), dimmed);
-                Row::new(vec![
-                    Cell::from(category.clone()).style(key_style),
-                    Cell::from(name.clone()).style(val_style),
-                ])
-            })
-            .collect();
-
-        let total_items = all_rows.len();
-        let header_height = 1u16;
-        let content_height = area.height.saturating_sub(header_height);
-        let visible_rows = content_height as usize;
-        let max_offset = total_items.saturating_sub(visible_rows.max(1));
-        let offset = scroll_offset.min(max_offset);
-
-        *scroll.offset = offset;
-        *scroll.visible_rows = visible_rows;
-
-        let needs_scroll = total_items > visible_rows;
-        let scrollbar_width: u16 = if needs_scroll { 2 } else { 0 };
-        let table_width = area.width.saturating_sub(scrollbar_width);
-
-        let visible_slice: Vec<Row> = all_rows.into_iter().skip(offset).take(visible_rows).collect();
-
-        let table = Table::new(
-            visible_slice,
-            [
-                Constraint::Percentage(50),
-                Constraint::Percentage(50),
-            ],
-        )
-        .header(header)
-        .column_spacing(1)
-        .style(Style::default().bg(bg));
-
-        f.render_widget(table, Rect::new(area.x, area.y, table_width, area.height));
-
-        if needs_scroll {
-            let sb_area = Rect::new(area.x + table_width, area.y + 1, 2, content_height);
-            let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
-                .thumb_style(dim_if(
-                    theme,
-                    Style::default().fg(c(theme, tokens::ACCENT_SECONDARY)),
-                    dimmed,
-                ))
-                .track_style(dim_if(
-                    theme,
-                    Style::default().fg(c(theme, tokens::BORDER_UNFOCUSED)),
-                    dimmed,
-                ));
-            let content_len = max_offset + visible_rows;
-            let sb_position = if max_offset == 0 {
-                0
-            } else {
-                offset.saturating_mul(content_len.saturating_sub(1)) / max_offset
-            };
-            let mut sb_state = ScrollbarState::new(content_len)
-                .position(sb_position)
-                .viewport_content_length(visible_rows);
-            f.render_stateful_widget(scrollbar, sb_area, &mut sb_state);
-        }
     }
 
     fn render_key_value_table(
